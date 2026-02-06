@@ -159,7 +159,7 @@
      
       // Chiamata IFTTT con il nome del manutentore
       // Il messaggio Telegram sarà: "[Nome] è appena entrato dal cancello della pesa"
-      const message = encodeURIComponent(nome + " è appena entrato dal cancello della pesa");
+      const message = encodeURIComponent(nome);
       fetch("https://maker.ifttt.com/trigger/Cancello/with/key/gnYYkYK-CXpD4U-5ROjNSCKbsiN5HJ8k8dVPoQklN4U?value1=" + message);
      
       localStorage.setItem("gateClickTime", Date.now().toString());
