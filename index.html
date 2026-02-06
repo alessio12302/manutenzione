@@ -131,6 +131,7 @@
       <option value="">Seleziona il tuo nome</option>
       <option value="Maurizio">Maurizio</option>
       <option value="Mattia">Mattia</option>
+      <option value="Alessio">Alessio</option>
     </select>
     <button id="registerBtn" onclick="registraDispositivo()">Registra Dispositivo</button>
   </div>
@@ -228,7 +229,7 @@
       const now = new Date();
       const day = now.getDay();
       const hour = now.getHours();
-      return day >= 1 && day <= 6 && hour >= 7 && hour < 17;
+      return day >= 1 && day <= 6 && hour >= 7 && hour < 18;
     }
 
     function apriCancello() {
