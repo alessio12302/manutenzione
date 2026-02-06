@@ -2,7 +2,9 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content=
+"width=device-width, initial-scale=1.0"
+>
   <title>Amadori - Cancello</title>
   <style>
     body {
@@ -37,24 +39,40 @@
       margin: 10px 0 30px;
     }
 
-    #nameInput {
+    #registrationContainer {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    #nameSelect {
       padding: 12px 20px;
       font-size: 18px;
       border: 2px solid white;
       border-radius: 8px;
       background-color: white;
       color: #28a745;
-      margin-bottom: 20px;
       width: 80%;
       max-width: 300px;
       text-align: center;
       font-weight: bold;
-      display: none;
+      cursor: pointer;
     }
 
-    #nameInput::placeholder {
-      color: #90d5a0;
-      font-weight: normal;
+    #registerBtn {
+      padding: 12px 25px;
+      font-size: 16px;
+      background-color: #ffffff;
+      color: #28a745;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #registerBtn:hover {
+      background-color: #e6e6e6;
     }
 
     button {
@@ -84,6 +102,19 @@
       font-size: 16px;
       max-width: 90%;
     }
+
+    .reset-link {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #ffffff;
+      text-decoration: underline;
+      cursor: pointer;
+      display: none;
+    }
+
+    .reset-link:hover {
+      color: #e6e6e6;
+    }
   </style>
 </head>
 <body>
@@ -94,14 +125,25 @@
   <h2>Allevamento di Morro D Oro</h2>
   <div class="section-title">Ingresso Manutentori</div>
 
-  <!-- Campo nome manutentore -->
-  <input type="text" id="nameInput" placeholder="Inserisci il tuo nome" maxlength="50">
+  <!-- Container per registrazione primo accesso -->
+  <div id="registrationContainer">
+    <select id="nameSelect">
+      <option value="">Seleziona il tuo nome</option>
+      <option value="Maurizio">Maurizio</option>
+      <option value="Mattia">Mattia</option>
+    </select>
+    <button id="registerBtn" onclick="registraDispositivo()">Registra Dispositivo</button>
+  </div>
 
   <button id="openGateBtn" onclick="apriCancello()">Apri Cancello</button>
 
   <div id="status">Il cancello si sta aprendo...</div>
   <div id="closed">Accesso non disponibile, torna più tardi.</div>
   <div id="geoError">Uhm, non sei davanti al cancello…</div>
+
+  <div class="reset-link" id="resetLink" onclick="cancellaRegistrazione()">
+    Cambia utente/dispositivo
+  </div>
 
   <div class="note">
     Ricorda di accettare/consentire la posizione attuale del tuo dispositivo per il corretto funzionamento.<br>
@@ -111,17 +153,60 @@
 
   <script>
     const button = document.getElementById("openGateBtn");
-    const nameInput = document.getElementById("nameInput");
+    const registrationContainer = document.getElementById("registrationContainer");
+    const nameSelect = document.getElementById("nameSelect");
+    const registerBtn = document.getElementById("registerBtn");
     const statusMsg = document.getElementById("status");
     const closedMsg = document.getElementById("closed");
     const geoErrorMsg = document.getElementById("geoError");
+    const resetLink = document.getElementById("resetLink");
 
     const latConsentita = 42.67624;
     const lonConsentita = 13.92359;
     const raggioInMetri = 1000;
 
     let geoWatcherId = null;
-    let isPositionValid = false;
+
+    // Genera un Device ID univoco
+    function generateDeviceId() {
+      return 'device-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // Verifica se il dispositivo è già registrato
+    function isDeviceRegistered() {
+      return localStorage.getItem("deviceId") !== null && localStorage.getItem("maintainerName") !== null;
+    }
+
+    // Ottieni il nome del manutentore registrato
+    function getRegisteredName() {
+      return localStorage.getItem("maintainerName");
+    }
+
+    // Registra il dispositivo con il nome selezionato
+    function registraDispositivo() {
+      const selectedName = nameSelect.value;
+      if (!selectedName) {
+        alert("Per favore, seleziona il tuo nome.");
+        return;
+      }
+
+      const deviceId = generateDeviceId();
+      localStorage.setItem("deviceId", deviceId);
+      localStorage.setItem("maintainerName", selectedName);
+      
+      // Ricarica lo stato
+      location.reload();
+    }
+
+    // Cancella la registrazione del dispositivo
+    function cancellaRegistrazione() {
+      if (confirm("Sei sicuro di voler cancellare la registrazione di questo dispositivo?")) {
+        localStorage.removeItem("deviceId");
+        localStorage.removeItem("maintainerName");
+        localStorage.removeItem("gateClickTime");
+        location.reload();
+      }
+    }
 
     function distanza(lat1, lon1, lat2, lon2) {
       const R = 6371e3;
@@ -147,41 +232,31 @@
     }
 
     function apriCancello() {
-      const nome = nameInput.value.trim();
+      const nome = getRegisteredName();
       if (!nome) {
-        alert("Per favore, inserisci il tuo nome.");
+        alert("Errore: dispositivo non registrato.");
         return;
       }
 
       button.style.display = "none";
-      nameInput.style.display = "none";
+      resetLink.style.display = "none";
       statusMsg.style.display = "block";
-     
+      
       // Chiamata IFTTT con il nome del manutentore
       // Il messaggio Telegram sarà: "[Nome] è appena entrato dal cancello della pesa"
-      const message = encodeURIComponent(nome);
+      const message = encodeURIComponent(nome + " è appena entrato dal cancello della pesa");
       fetch("https://maker.ifttt.com/trigger/Cancello/with/key/gnYYkYK-CXpD4U-5ROjNSCKbsiN5HJ8k8dVPoQklN4U?value1=" + message);
-     
+      
       localStorage.setItem("gateClickTime", Date.now().toString());
-      localStorage.setItem("lastMaintainerName", nome);
     }
 
     function resetMessaggi() {
       button.style.display = "none";
-      nameInput.style.display = "none";
+      registrationContainer.style.display = "none";
       statusMsg.style.display = "none";
       closedMsg.style.display = "none";
       geoErrorMsg.style.display = "none";
-      isPositionValid = false;
-    }
-
-    function checkButtonVisibility() {
-      const nome = nameInput.value.trim();
-      if (isPositionValid && nome.length > 0) {
-        button.style.display = "inline-block";
-      } else {
-        button.style.display = "none";
-      }
+      resetLink.style.display = "none";
     }
 
     function checkAccess(lat, lon) {
@@ -194,30 +269,28 @@
 
       if (distanzaUtente <= raggioInMetri) {
         if (secondsPassed < 120) {
+          // Cancello recentemente aperto
           statusMsg.style.display = "block";
         } else if (isAccessAllowed()) {
-          // Mostra il campo nome solo se la posizione è corretta
-          isPositionValid = true;
-          nameInput.style.display = "block";
-         
-          // Ripristina l'ultimo nome usato se disponibile
-          const lastMaintainerName = localStorage.getItem("lastMaintainerName");
-          if (lastMaintainerName && !nameInput.value) {
-            nameInput.value = lastMaintainerName;
+          // Orario di accesso consentito
+          if (isDeviceRegistered()) {
+            // Dispositivo già registrato - mostra pulsante apri cancello
+            button.style.display = "inline-block";
+            resetLink.style.display = "block";
+          } else {
+            // Dispositivo non registrato - mostra form di registrazione
+            registrationContainer.style.display = "flex";
           }
-         
-          checkButtonVisibility();
         } else {
+          // Orario non consentito
           closedMsg.style.display = "block";
         }
       } else {
+        // Posizione non valida
         geoErrorMsg.style.display = "block";
         geoErrorMsg.textContent = "Uhm, non sei davanti al cancello…";
       }
     }
-
-    // Event listener per mostrare il pulsante quando viene inserito il nome
-    nameInput.addEventListener("input", checkButtonVisibility);
 
     function startWatchingPosition() {
       if (navigator.geolocation) {
@@ -260,4 +333,3 @@
 
 </body>
 </html>
-
