@@ -37,26 +37,6 @@
       margin: 10px 0 30px;
     }
 
-    #nameInput {
-      padding: 12px 20px;
-      font-size: 18px;
-      border: 2px solid white;
-      border-radius: 8px;
-      background-color: white;
-      color: #28a745;
-      margin-bottom: 20px;
-      width: 80%;
-      max-width: 300px;
-      text-align: center;
-      font-weight: bold;
-      display: none;
-    }
-
-    #nameInput::placeholder {
-      color: #90d5a0;
-      font-weight: normal;
-    }
-
     button {
       padding: 15px 30px;
       font-size: 18px;
@@ -94,9 +74,6 @@
   <h2>Allevamento di Morro D Oro</h2>
   <div class="section-title">Ingresso Manutentori</div>
 
-  <!-- Campo nome manutentore -->
-  <input type="text" id="nameInput" placeholder="Inserisci il tuo nome" maxlength="50">
-
   <button id="openGateBtn" onclick="apriCancello()">Apri Cancello</button>
 
   <div id="status">Il cancello si sta aprendo...</div>
@@ -111,7 +88,6 @@
 
   <script>
     const button = document.getElementById("openGateBtn");
-    const nameInput = document.getElementById("nameInput");
     const statusMsg = document.getElementById("status");
     const closedMsg = document.getElementById("closed");
     const geoErrorMsg = document.getElementById("geoError");
@@ -121,7 +97,6 @@
     const raggioInMetri = 1000;
 
     let geoWatcherId = null;
-    let isPositionValid = false;
 
     function distanza(lat1, lon1, lat2, lon2) {
       const R = 6371e3;
@@ -147,41 +122,17 @@
     }
 
     function apriCancello() {
-      const nome = nameInput.value.trim();
-      if (!nome) {
-        alert("Per favore, inserisci il tuo nome.");
-        return;
-      }
-
       button.style.display = "none";
-      nameInput.style.display = "none";
       statusMsg.style.display = "block";
-     
-      // Chiamata IFTTT con il nome del manutentore
-      // Il messaggio Telegram sarà: "[Nome] è appena entrato dal cancello della pesa"
-      const message = encodeURIComponent(nome);
-      fetch("https://maker.ifttt.com/trigger/Cancello/with/key/gnYYkYK-CXpD4U-5ROjNSCKbsiN5HJ8k8dVPoQklN4U?value1=" + message);
-     
+      fetch("https://maker.ifttt.com/trigger/Cancello/with/key/gnYYkYK-CXpD4U-5ROjNSCKbsiN5HJ8k8dVPoQklN4U");
       localStorage.setItem("gateClickTime", Date.now().toString());
-      localStorage.setItem("lastMaintainerName", nome);
     }
 
     function resetMessaggi() {
       button.style.display = "none";
-      nameInput.style.display = "none";
       statusMsg.style.display = "none";
       closedMsg.style.display = "none";
       geoErrorMsg.style.display = "none";
-      isPositionValid = false;
-    }
-
-    function checkButtonVisibility() {
-      const nome = nameInput.value.trim();
-      if (isPositionValid && nome.length > 0) {
-        button.style.display = "inline-block";
-      } else {
-        button.style.display = "none";
-      }
     }
 
     function checkAccess(lat, lon) {
@@ -196,17 +147,7 @@
         if (secondsPassed < 120) {
           statusMsg.style.display = "block";
         } else if (isAccessAllowed()) {
-          // Mostra il campo nome solo se la posizione è corretta
-          isPositionValid = true;
-          nameInput.style.display = "block";
-         
-          // Ripristina l'ultimo nome usato se disponibile
-          const lastMaintainerName = localStorage.getItem("lastMaintainerName");
-          if (lastMaintainerName && !nameInput.value) {
-            nameInput.value = lastMaintainerName;
-          }
-         
-          checkButtonVisibility();
+          button.style.display = "inline-block";
         } else {
           closedMsg.style.display = "block";
         }
@@ -215,9 +156,6 @@
         geoErrorMsg.textContent = "Uhm, non sei davanti al cancello…";
       }
     }
-
-    // Event listener per mostrare il pulsante quando viene inserito il nome
-    nameInput.addEventListener("input", checkButtonVisibility);
 
     function startWatchingPosition() {
       if (navigator.geolocation) {
